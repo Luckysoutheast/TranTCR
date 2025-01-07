@@ -13,12 +13,9 @@ from sklearn.metrics import classification_report
 from sklearn.utils import class_weight
 from collections import Counter
 def get_numbering(seqs, ):
-    """
-    get the IMGT numbering of CDR3 with ANARCI tool
-    """
     template = ['GVTQTPKFQVLKTGQSMTLQCAQDMNHEYMSWYRQDPGMGLRLIHYSVGAGTTDQGEVPNGYNVSRSTIEDFPLRLLSAAPSQTSVYF', 'GEGSRLTVL']
     # # save fake tcr file
-    save_path = 'tmp_faketcr.fasta'
+    save_path = 'tmp_cdr.fasta'
     id_list = []
     seqs_uni = np.unique(seqs)
     with open(save_path, 'w+') as f:
@@ -36,12 +33,10 @@ def get_numbering(seqs, ):
    # this environment name should be the same as the one you install anarci
     cmd = ("conda run -n TranTCR "  # this environment name should be the same as the one you install anarci
             " ANARCI"
-            " -i tmp_faketcr.fasta  -o tmp_align --csv -p 24")
+            " -i tmp_cdr.fasta  -o tmp_align_cdr --csv -p 24")
     res = os.system(cmd)
-    
-    # # parse numbered seqs data
     try:
-        df = pd.read_csv('tmp_align_B.csv')
+        df = pd.read_csv('tmp_align_cdr_B.csv')
     except FileNotFoundError:
         raise FileNotFoundError('Error: ANARCI failed to align, please check whether ANARCI exists in your environment')
         
@@ -59,8 +54,8 @@ def get_numbering(seqs, ):
     df_al['cdr3_align'] = seqs_al
     
     ## merge
-    # os.remove('tmp_align_B.csv')
-#     os.remove('tmp_faketcr.fasta')
+    os.remove('tmp_align_cdr_B.csv')
+    os.remove('tmp_cdr.fasta')
     df = df_seqs.merge(df_al, how='inner', on='Id')
     df = df.set_index('cdr3')
     return df.loc[seqs, 'cdr3_align'].values
@@ -73,72 +68,6 @@ class View(nn.Module):
     def forward(self, input):
         shape = [input.shape[0]] + list(self.shape)
         return input.view(*shape)
-def load_ae_model(tokenizer, path='./epi_ae.ckpt',):
-    # tokenizer = Tokenizer()
-    ## load model
-    model_args = dict(
-        tokenizer = tokenizer,
-        dim_hid = 32,
-        len_seq = 12,
-    )
-    model = AutoEncoder(**model_args)
-    model.eval()
-
-    ## load weights
-    state_dict = torch.load(path, map_location=device)
-    state_dict = {k[6:]:v for k, v in state_dict.items()}
-    model.load_state_dict(state_dict)
-    return model
-class AutoEncoder(nn.Module):
-    def __init__(self, 
-        tokenizer,
-        dim_hid,
-        len_seq,
-    ):
-        super().__init__()
-        embedding = tokenizer.embedding_mat()
-        vocab_size, dim_emb = embedding.shape
-        self.embedding_module = nn.Embedding.from_pretrained(torch.FloatTensor(embedding), padding_idx=0, )
-        self.encoder = nn.Sequential(
-            nn.Conv1d(dim_emb, dim_hid, 3, padding=1),
-            nn.BatchNorm1d(dim_hid),
-            nn.ReLU(),
-            nn.Conv1d(dim_hid, dim_hid, 3, padding=1),
-            nn.BatchNorm1d(dim_hid),
-            nn.ReLU(),
-        )
-
-        self.seq2vec = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(len_seq * dim_hid, dim_hid),
-            nn.ReLU()
-        )
-        self.vec2seq = nn.Sequential(
-            nn.Linear(dim_hid, len_seq * dim_hid),
-            nn.ReLU(),
-            View(dim_hid, len_seq)
-        )
-        self.decoder = nn.Sequential(
-            nn.ConvTranspose1d(dim_hid, dim_hid, kernel_size=3, padding=1),
-            nn.BatchNorm1d(dim_hid),
-            nn.ReLU(),
-            nn.ConvTranspose1d(dim_hid, dim_hid, kernel_size=3, padding=1),
-            nn.BatchNorm1d(dim_hid),
-            nn.ReLU(),
-        )
-        self.out_layer = nn.Linear(dim_hid, vocab_size)
-
-    def forward(self, inputs):
-        inputs = inputs.long()
-        seq_emb = self.embedding_module(inputs)
-        
-        seq_enc = self.encoder(seq_emb.transpose(1, 2))
-        vec = self.seq2vec(seq_enc)
-        seq_repr = self.vec2seq(vec)
-        indices = None
-        seq_dec = self.decoder(seq_repr)
-        out = self.out_layer(seq_dec.transpose(1, 2))
-        return out, seq_enc, vec, indices
 def GetBlosumMat(residues_list):
     n_residues = len(residues_list)  # the number of amino acids _ 'X'
     blosum62_mat = np.zeros([n_residues, n_residues])  # plus 1 for gap

@@ -29,9 +29,9 @@ from Bio.Align import substitution_matrices
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")     
 pep_max_len = 12 # peptide; enc_input max sequence length
-hla_max_len = 20 # hla; dec_input(=dec_output) max sequence length
-tgt_len = pep_max_len + hla_max_len
-pep_max_len, hla_max_len
+cdr_max_len = 20 # cdr; dec_input(=dec_output) max sequence length
+tgt_len = pep_max_len + cdr_max_len
+pep_max_len, cdr_max_len
 vocab_size = 21
 
 d_model=64 # Embedding Size
@@ -229,7 +229,7 @@ class Decoder(nn.Module):
         self.layers = nn.ModuleList([DecoderLayer() for _ in range(n_layers)])
         self.tgt_len = tgt_len
         
-    def forward(self, dec_inputs): # dec_inputs = enc_outputs (batch_size, peptide_hla_maxlen_sum, d_model)
+    def forward(self, dec_inputs): # dec_inputs = enc_outputs (batch_size, peptide_cdr_maxlen_sum, d_model)
         '''
         dec_inputs: [batch_size, tgt_len]
         enc_intpus: [batch_size, src_len]
@@ -260,7 +260,7 @@ class Transformer(nn.Module):
         self.use_cuda = use_cuda
         device = torch.device("cuda" if use_cuda else "cpu")
         self.pep_encoder = Encoder().to(device)
-        self.hla_encoder = Encoder().to(device)
+        self.cdr_encoder = Encoder().to(device)
         self.decoder = Decoder().to(device)
         self.tgt_len = tgt_len
         self.projection = nn.Sequential(
@@ -275,22 +275,14 @@ class Transformer(nn.Module):
                                         nn.Linear(64, 2)
                                         ).to(device)
         
-    def forward(self, hla_inputs,pep_inputs):
+    def forward(self, cdr_inputs,pep_inputs):
         '''
         pep_inputs: [batch_size, pep_len]
-        hla_inputs: [batch_size, hla_len]
+        cdr_inputs: [batch_size, cdr_len]
         '''
-        # tensor to store decoder outputs
-        # outputs = torch.zeros(batch_size, tgt_len, tgt_vocab_size).to(self.device)
-        
-        # enc_outputs: [batch_size, src_len, d_model], enc_self_attns: [n_layers, batch_size, n_heads, src_len, src_len]
-        hla_enc_outputs, hla_enc_self_attns = self.hla_encoder(hla_inputs)
+        cdr_enc_outputs, cdr_enc_self_attns = self.cdr_encoder(cdr_inputs)
         pep_enc_outputs, pep_enc_self_attns = self.pep_encoder(pep_inputs)
-        
-#         print(hla_enc_outputs)
-        enc_outputs = torch.cat((hla_enc_outputs,pep_enc_outputs), 1) # concat pep & hla embedding
-        ## reverse ##
-#         enc_outputs = pep_enc_outputs*hla_enc_outputs
+        enc_outputs = torch.cat((cdr_enc_outputs,pep_enc_outputs), 1) # concat pep & cdr embedding
         
         ## end ##
         # dec_outpus: [batch_size, tgt_len, d_model], dec_self_attns: [n_layers, batch_size, n_heads, tgt_len, tgt_len], dec_enc_attn: [n_layers, batch_size, tgt_len, src_len]
@@ -298,4 +290,4 @@ class Transformer(nn.Module):
         dec_outputs = dec_outputs.view(dec_outputs.shape[0], -1) # Flatten [batch_size, tgt_len * d_model]
         dec_logits = self.projection(dec_outputs) # dec_logits: [batch_size, tgt_len, tgt_vocab_size]
 
-        return dec_logits.view(-1, dec_logits.size(-1)), pep_enc_self_attns, hla_enc_self_attns, dec_self_attns
+        return dec_logits.view(-1, dec_logits.size(-1)), pep_enc_self_attns, cdr_enc_self_attns, dec_self_attns

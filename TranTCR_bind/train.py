@@ -46,16 +46,15 @@ def train_step(model, train_loader, fold, epoch, epochs, use_cuda = True):
     model.train()
     y_true_train_list, y_prob_train_list = [], []
     loss_train_list, dec_attns_train_list = [], []
-    for train_pep_inputs, train_hla_inputs, train_labels in tqdm(train_loader):
+    for train_pep_inputs, train_cdr_inputs, train_labels in tqdm(train_loader):
         '''
         pep_inputs: [batch_size, pep_len]
-        hla_inputs: [batch_size, hla_len]
+        cdr3_inputs: [batch_size, cdr_len]
         train_outputs: [batch_size, 2]
         '''
-        train_pep_inputs, train_hla_inputs, train_labels = train_pep_inputs.to(device), train_hla_inputs.to(device), train_labels.to(device)
-#         print(train_pep_inputs.shape,train_hla_inputs.shape)
+        train_pep_inputs, train_cdr_inputs, train_labels = train_pep_inputs.to(device), train_cdr_inputs.to(device), train_labels.to(device)
         t1 = time.time()
-        train_outputs, _, _, train_dec_self_attns = model(train_hla_inputs, train_pep_inputs)
+        train_outputs, _, _, train_dec_self_attns = model(train_cdr_inputs, train_pep_inputs)
         train_loss = criterion(train_outputs, train_labels)
         time_train_ep += time.time() - t1
 
@@ -88,9 +87,9 @@ def eval_step(model, val_loader, fold, epoch, epochs, use_cuda = True):
     with torch.no_grad():
         loss_val_list, dec_attns_val_list = [], []
         y_true_val_list, y_prob_val_list = [], []
-        for val_pep_inputs, val_hla_inputs, val_labels in tqdm(val_loader):
-            val_pep_inputs, val_hla_inputs, val_labels = val_pep_inputs.to(device), val_hla_inputs.to(device), val_labels.to(device)
-            val_outputs, _, _, val_dec_self_attns = model(val_hla_inputs,val_pep_inputs)
+        for val_pep_inputs, val_cdr_inputs, val_labels in tqdm(val_loader):
+            val_pep_inputs, val_cdr_inputs, val_labels = val_pep_inputs.to(device), val_cdr_inputs.to(device), val_labels.to(device)
+            val_outputs, _, _, val_dec_self_attns = model(val_cdr_inputs,val_pep_inputs)
             val_loss = criterion(val_outputs, val_labels)
 
             y_true_val = val_labels.cpu().numpy()
@@ -127,15 +126,13 @@ def data_with_loader(type_ = 'train',fold = None,  batch_size = 128):
 
     elif type_ == 'val':
         data = pd.read_csv('./突变负样本/add_10xneg/add_10xneg/eva_add10Xneg_{}.csv'.format(fold))
-
-    pep_inputs, hla_inputs,labels = make_data(data)
-#     print(labels)
-    loader = Data.DataLoader(MyDataSet(pep_inputs, hla_inputs,labels), batch_size, shuffle = True, num_workers = 0)
+    pep_inputs, cdr_inputs,labels = make_data(data)
+    loader = Data.DataLoader(MyDataSet(pep_inputs, cdr_inputs,labels), batch_size, shuffle = True, num_workers = 0)
     n_samples = len(pep_inputs)
-    len_cdr3 = len(hla_inputs[0])
+    len_cdr3 = len(cdr_inputs[0])
     len_epi = len(pep_inputs[0])
     encoding_mask = np.zeros([n_samples, len_cdr3,len_epi])
-    for idx_sample, (enc_cdr3_this, enc_epi_this) in enumerate(zip(hla_inputs, pep_inputs)):
+    for idx_sample, (enc_cdr3_this, enc_epi_this) in enumerate(zip(cdr_inputs, pep_inputs)):
         mask = np.ones([len_cdr3,len_epi])
         zero_cdr3 = (enc_cdr3_this == 0)
         mask[zero_cdr3,:] = 0
@@ -143,7 +140,7 @@ def data_with_loader(type_ = 'train',fold = None,  batch_size = 128):
         mask[:,zero_epi] = 0
 #         print(mask.shape)
         encoding_mask[idx_sample] = mask
-    return data, pep_inputs, hla_inputs, labels,loader,encoding_mask
+    return data, pep_inputs, cdr_inputs, labels,loader,encoding_mask
 for n_heads in range(5,6):
     
     ys_train_fold_dict, ys_val_fold_dict = {}, {}
@@ -155,8 +152,8 @@ for n_heads in range(5,6):
     for fold in range(1,6):
         print('=====Fold-{}====='.format(fold))
         print('-----Generate data loader-----')
-        train_data, train_pep_inputs, train_hla_inputs, train_labels, train_loader,_ = data_with_loader(type_ = 'train', fold = fold,  batch_size = batch_size)
-        val_data, val_pep_inputs, val_hla_inputs, val_labels, val_loader,_ = data_with_loader(type_ = 'val', fold = fold,  batch_size = batch_size)
+        train_data, train_pep_inputs, train_cdr_inputs, train_labels, train_loader,_ = data_with_loader(type_ = 'train', fold = fold,  batch_size = batch_size)
+        val_data, val_pep_inputs, val_cdr_inputs, val_labels, val_loader,_ = data_with_loader(type_ = 'val', fold = fold,  batch_size = batch_size)
         print('Fold-{} Label info: Train = {} | Val = {}'.format(fold, Counter(train_data.label), Counter(val_data.label)))
 
         print('-----Compile model-----')
@@ -167,7 +164,7 @@ for n_heads in range(5,6):
         print('-----Train-----')
         dir_saver = './model2'
     
-        path_saver = './tcr_st_layer{}_multihead{}_fold{}_netmhcpan.pkl'.format(n_layers, n_heads, fold)
+        path_saver = './model2/tcr_st_layer{}_multihead{}_fold{}_netmhcpan.pkl'.format(n_layers, n_heads, fold)
         metric_best, ep_best = 0, -1
         time_train = 0
         for epoch in range(1, epochs + 1):
