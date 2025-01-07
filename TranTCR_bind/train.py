@@ -68,13 +68,12 @@ def train_step(model, train_loader, fold, epoch, epochs, use_cuda = True):
         y_true_train_list.extend(y_true_train)
         y_prob_train_list.extend(y_prob_train)
         loss_train_list.append(train_loss)
-#         dec_attns_train_list.append(train_dec_self_attns)
         
     y_pred_train_list = transfer(y_prob_train_list, threshold)
     ys_train = (y_true_train_list, y_pred_train_list, y_prob_train_list)
     
     print('Fold-{}****Train (Ep avg): Epoch-{}/{} | Loss = {:.4f} | Time = {:.4f} sec'.format(fold, epoch, epochs, f_mean(loss_train_list), time_train_ep))
-    metrics_train = performances(y_true_train_list, y_pred_train_list, y_prob_train_list, print_ = True)
+    metrics_train = performances(y_true_train_list, y_pred_train_list, y_prob_train_list,None,print_ = True)
     
     return ys_train, loss_train_list, metrics_train, time_train_ep#, dec_attns_train_list
 
@@ -104,23 +103,11 @@ def eval_step(model, val_loader, fold, epoch, epochs, use_cuda = True):
         ys_val = (y_true_val_list, y_pred_val_list, y_prob_val_list)
         
         print('Fold-{} ****Test  Epoch-{}/{}: Loss = {:.6f}'.format(fold, epoch, epochs, f_mean(loss_val_list)))
-        metrics_val = performances(y_true_val_list, y_pred_val_list, y_prob_val_list, print_ = True)
+        metrics_val = performances(y_true_val_list, y_pred_val_list, y_prob_val_list, None,print_ = True)
     return ys_val, loss_val_list, metrics_val#, dec_attns_val_list
-
-
-
-
-
-
-
-
 def data_with_loader(type_ = 'train',fold = None,  batch_size = 128):
     if type_ != 'train' and type_ != 'val':
-#         data = pd.read_csv('../data/justina_test.csv')
-        data = pd.read_csv('./inputs/inputs_bd.csv')
-#         data = pd.read_csv('../data/test/GILGLVFTL.csv')
-#         data = pd.read_csv('../data/posi_length.csv')
-        
+        data = pd.read_csv('../data/justina_test.csv')
     elif type_ == 'train':
         data = pd.read_csv('./mutation_data/add_10xneg/add_10xneg/train_add10Xneg_{}.csv'.format(fold))
 
@@ -192,7 +179,6 @@ for n_heads in range(5,6):
 
             ys_res_train, loss_res_train_list, metrics_res_train = eval_step(model_eval, train_loader, fold, ep_best, epochs, use_cuda) # , train_res_attns
             ys_res_val, loss_res_val_list, metrics_res_val = eval_step(model_eval, val_loader, fold, ep_best, epochs, use_cuda) # , val_res_attns
-
 
             train_fold_metrics_list.append(metrics_res_train)
             val_fold_metrics_list.append(metrics_res_val)

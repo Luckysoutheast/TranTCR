@@ -27,10 +27,6 @@ def get_numbering(seqs, ):
             f.write('\n')
     print('Save fasta file to '+save_path + '\n Aligning...')
     df_seqs = pd.DataFrame(list(zip(id_list, seqs_uni)), columns=['Id', 'cdr3'])
-    
-    # # using ANARCI to get numbering file
-
-   # this environment name should be the same as the one you install anarci
     cmd = ("conda run -n TranTCR "  # this environment name should be the same as the one you install anarci
             " ANARCI"
             " -i tmp_cdr.fasta  -o tmp_align_cdr --csv -p 24")
@@ -89,7 +85,7 @@ class Tokenizer:
     def tokenize(self, index): # int 2 str
         return self.tokens[index]
 
-    def id(self, token): # str 2 int
+    def id(self, token):
         try:
             return self.tokens.index(token.upper())
         except ValueError:
@@ -165,7 +161,7 @@ class MyDataSet(Data.Dataset):
     def __getitem__(self, idx):
 #         return self.pep_inputs[idx], self.hla_inputs[idx], self.labels[idx],self.pep_lens[idx]
         return self.pep_inputs[idx],self.hla_inputs[idx], self.labels[idx]
-def performances(y_true, y_pred, y_prob, print_ = True):
+def performances(y_true, y_pred, y_prob,output_file='None',print_ = True):
     
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels = [0, 1]).ravel().tolist()
     accuracy = (tp+tn)/(tn+fp+fn+tp)
