@@ -22,6 +22,11 @@ For TranTCR-bind:
 ```
 
 ### predict
+For TranTCR-bind:
+```bash
+    cd TranTCR-bind
+    python predict.py
+```
 
 
 ## Contact
