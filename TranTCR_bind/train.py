@@ -109,10 +109,10 @@ def data_with_loader(type_ = 'train',fold = None,  batch_size = 128):
     if type_ != 'train' and type_ != 'val':
         data = pd.read_csv('../data/justina_test.csv')
     elif type_ == 'train':
-        data = pd.read_csv('./mutation_data/add_10xneg/add_10xneg/train_add10Xneg_{}.csv'.format(fold))
+        data = pd.read_csv('./train_data/mutation_data/add_10xneg/add_10xneg/train_add10Xneg_{}.csv'.format(fold))
 
     elif type_ == 'val':
-        data = pd.read_csv('./mutation_data/add_10xneg/add_10xneg/eva_add10Xneg_{}.csv'.format(fold))
+        data = pd.read_csv('./train_data/mutation_data/add_10xneg/add_10xneg/eva_add10Xneg_{}.csv'.format(fold))
     pep_inputs, cdr_inputs,labels = make_data(data)
     loader = Data.DataLoader(MyDataSet(pep_inputs, cdr_inputs,labels), batch_size, shuffle = True, num_workers = 0)
     n_samples = len(pep_inputs)
