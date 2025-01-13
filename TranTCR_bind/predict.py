@@ -306,14 +306,14 @@ def eval_step(model, val_loader, fold, epoch, epochs, dir_head, use_cuda = True)
 
 def data_with_loader(type_ = 'train',fold = None,  batch_size = 128):
     if type_ != 'train' and type_ != 'val':
-        data = pd.read_csv('./extend_testdata/mari_data_100%test.csv')
+        data = pd.read_csv('./test_data/ImmuneCode/random mutation/unique_cdr3_1V1_Immunecode.csv')
         
         
     elif type_ == 'train':
-        data = pd.read_csv('../突变负样本/VDJ_10X_McPAS_1V5/train_VDJ_10X_McPAS_1V5_{}.csv'.format(fold))
+        data = pd.read_csv('../VDJ_10X_McPAS_1V5/train_VDJ_10X_McPAS_1V5_{}.csv'.format(fold))
 
     elif type_ == 'val':
-        data = pd.read_csv('../突变负样本/VDJ_10X_McPAS_1V5/eva_VDJ_10X_McPAS_1V5_{}.csv'.format(fold))
+        data = pd.read_csv('../VDJ_10X_McPAS_1V5/eva_VDJ_10X_McPAS_1V5_{}.csv'.format(fold))
 
     pep_inputs, cdr_inputs,labels = make_data(data)
     loader = Data.DataLoader(MyDataSet(pep_inputs, cdr_inputs,labels), batch_size, shuffle = False, num_workers = 0)
