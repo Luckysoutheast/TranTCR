@@ -38,7 +38,7 @@ d_model=64 # Embedding Size
 d_ff = 256 # FeedForward dimension
 d_k = d_v = 64  # dimension of K(=Q), V
 n_layers = 1 
-n_heads = 9
+n_heads = 5
 batch_size = 1024
 
 class PositionalEncoding(nn.Module):
