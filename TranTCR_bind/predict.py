@@ -342,10 +342,10 @@ use_cuda = True
 device = torch.device("cuda" if use_cuda else "cpu")
 criterion = nn.CrossEntropyLoss()
 ep_best = None
-dir_head = './shiyan/all_IEDB_newneg1V1.csv_Fold-4.csv'
+dir_head = './output/test.csv'
 data, pep_inputs, cdr_inputs, labels, loader,_ = data_with_loader(type_,fold = fold,  batch_size = batch_size)
 print(len(data))
 independent_metrics_res, independent_ys_res, independent_attn_res= eval_step(model, loader, fold, ep_best, epochs,dir_head,use_cuda)
 data['y_pred'], data['y_prob']= independent_metrics_res[1],independent_metrics_res[2]
 print("data:",data)
-data.to_csv('./extend_testdata/result_mira.csv',index=False)
+data.to_csv('./output/result_test.csv',index=False)
