@@ -330,7 +330,7 @@ def data_with_loader(type_ = 'train',fold = None,  batch_size = 128):
         encoding_mask[idx_sample] = mask
     return data, pep_inputs, cdr_inputs, labels,loader,encoding_mask
 import csv
-path_saver = './model2/tcr_st_layer1_multihead5_fold1_netmhcpan.pkl'
+path_saver = './model_pkl/tcr_st_layer1_multihead5_fold1_netmhcpan.pkl'
 fold = 4
 epochs = None
 threshold = 0.5
