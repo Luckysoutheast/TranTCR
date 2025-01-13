@@ -28,6 +28,11 @@ from multiprocessing import Pool
 import pickle
 from Bio.Align import substitution_matrices
 import sys
+from argparse import ArgumentParser
+parser = ArgumentParser(description="Specifying Input Parameters")
+parser.add_argument("-t", "--testfile", help="Specify the full path of the test file ")
+parser.add_argument("-o", "--outfile", default=sys.stdout, help="Specify output file")
+args = parser.parse_args()
 sys.path.append('.')
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")
@@ -253,9 +258,9 @@ class Transformer(nn.Module):
         return dec_logits.view(-1, dec_logits.size(-1)), pep_enc_self_attns, cdr_enc_self_attns, dec_self_attns
 
 def make_data(data):
-    cdr3 = data['CDR3b'].values
-    epitope = data['peptide'].values
-    labels = data['binder'].values
+    cdr3 = data['CDR3'].values
+    epitope = data['Epitope'].values
+    labels = data['label'].values
     mat = Tokenizer() 
     cdr_inputs = encode_cdr3(cdr3, mat)
     pep_inputs = encode_epi(epitope, mat)
@@ -306,7 +311,8 @@ def eval_step(model, val_loader, fold, epoch, epochs, dir_head, use_cuda = True)
 
 def data_with_loader(type_ = 'train',fold = None,  batch_size = 128):
     if type_ != 'train' and type_ != 'val':
-        data = pd.read_csv('./test_data/ImmuneCode/random mutation/unique_cdr3_1V1_Immunecode.csv')
+        
+        data = pd.read_csv(args.testfile)
         
         
     elif type_ == 'train':
@@ -348,4 +354,4 @@ print(len(data))
 independent_metrics_res, independent_ys_res, independent_attn_res= eval_step(model, loader, fold, ep_best, epochs,dir_head,use_cuda)
 data['y_pred'], data['y_prob']= independent_metrics_res[1],independent_metrics_res[2]
 print("data:",data)
-data.to_csv('./output/result_test.csv',index=False)
+data.to_csv(args.outfile,index=False)

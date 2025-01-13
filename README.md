@@ -25,7 +25,7 @@ For TranTCR-bind:
 For TranTCR-bind:
 ```bash
     cd TranTCR-bind
-    python predict.py
+    python predict.py -t ./test_data/ImmuneCode/random_mutation/unique_cdr3_1V1_Immunecode.csv -o ./output/result_test.csv
 ```
 
 
