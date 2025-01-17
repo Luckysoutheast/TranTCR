@@ -18,7 +18,7 @@ You could first set up a virtual environment for TranTCR using conda:
 For TranTCR-bind:
 ```bash
     cd TranTCR-bind
-    python main.py
+    python train.py
 ```
 
 ### predict
