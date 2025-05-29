@@ -81,8 +81,8 @@ def eval_step(model, val_loader, fold, epoch, epochs, use_cuda = True):
     device = torch.device("cuda" if use_cuda else "cpu")
     
     model.eval()
-    torch.manual_seed(19961231)
-    torch.cuda.manual_seed(19961231)
+    torch.manual_seed(19951221)
+    torch.cuda.manual_seed(19951221)
     with torch.no_grad():
         loss_val_list, dec_attns_val_list = [], []
         y_true_val_list, y_prob_val_list = [], []
